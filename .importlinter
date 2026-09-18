@@ -1,0 +1,39 @@
+[importlinter]
+root_packages =
+    research
+    scripts
+
+[importlinter:contract:hypothesis-boundary]
+name = research.hypothesis only depends on research.state and research.hypothesis.base
+type = forbidden
+source_modules =
+    research.hypothesis
+forbidden_modules =
+    research.data
+    research.eval
+    research.report
+    scripts
+
+[importlinter:contract:eval-no-hypothesis]
+name = research.eval must not import research.hypothesis
+type = forbidden
+source_modules =
+    research.eval
+forbidden_modules =
+    research.hypothesis
+
+[importlinter:contract:state-no-data]
+name = research.state must not import research.data
+type = forbidden
+source_modules =
+    research.state
+forbidden_modules =
+    research.data
+
+[importlinter:contract:scripts-one-way]
+name = research must not import scripts (scripts depends on research, never the reverse)
+type = forbidden
+source_modules =
+    research
+forbidden_modules =
+    scripts
