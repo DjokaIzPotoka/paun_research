@@ -1,0 +1,49 @@
+# Config for scripts/deribit_l1_collector.py. Every key is required: the collector
+# refuses to start if one is missing (P-15). Values below are for the AWS VM.
+
+deribit:
+  ws_url: "wss://www.deribit.com/ws/api/v2"
+  rest_url: "https://www.deribit.com/api/v2"
+  currency: "BTC"
+  # "raw" needs an authenticated connection (error 13778). agg2 measured at
+  # ~910 msg/s for the full chain vs ~1270 for 100ms, and still reached all
+  # 1092 instruments inside every minute -- enough for a last-per-minute snapshot.
+  ticker_interval: "agg2"
+  index_channel: "deribit_price_index.btc_usd"
+  subscribe_batch_size: 500
+  heartbeat_interval_seconds: 30
+  # No frame at all for this long (ticks + heartbeats) means a dead connection.
+  stale_after_seconds: 20
+  request_timeout_seconds: 15
+  instruments_refresh_seconds: 3600
+  # Deribit expires at 08:00 UTC; new expiries are listed right after.
+  post_expiry_refresh_utc: "08:05"
+  # An unknown symbol triggers a refresh, but never more often than this.
+  metadata_refresh_min_interval_seconds: 30
+
+snapshot:
+  # Flush this long after each full minute, so the last messages of the minute are in.
+  flush_grace_ms: 250
+
+reconnect:
+  initial_backoff_seconds: 1
+  max_backoff_seconds: 60
+
+sink:
+  kind: "file"
+  # Rows kept in memory while the sink is failing, before the oldest are dropped
+  # and recorded as a sink_write_failed gap. ~1100 rows per minute.
+  retry_buffer_max_rows: 200000
+  file:
+    root: "/var/lib/zora-l1"
+  # For a local run straight into ClickHouse, set kind: "clickhouse" and add:
+  # clickhouse:
+  #   url: "http://127.0.0.1:8123"
+  #   database: "optrv"
+  #   user: "optrv"
+  #   password_file: "D:/zora-research-data/secrets/clickhouse_optrv.password"
+  #   timeout_seconds: 60
+
+# Holds the timestamp of the last flushed minute, used to record a
+# process_restart gap after a crash or reboot.
+state_dir: "/var/lib/zora-l1/_state"

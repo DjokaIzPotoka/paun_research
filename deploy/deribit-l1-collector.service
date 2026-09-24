@@ -1,0 +1,27 @@
+[Unit]
+Description=ZORA phase 0 - Deribit BTC L1 collector
+Wants=network-online.target
+After=network-online.target time-sync.target
+# Never give up restarting: a few weeks of collection must survive any number of crashes.
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=zora
+Group=zora
+WorkingDirectory=/opt/zora-research
+ExecStart=/opt/zora-research/.venv/bin/python -m scripts.deribit_l1_collector --config /opt/zora-research/scripts/deribit_l1_collector.yaml
+Restart=always
+RestartSec=5
+KillSignal=SIGTERM
+TimeoutStopSec=15
+Environment=PYTHONUNBUFFERED=1
+
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/var/lib/zora-l1
+
+[Install]
+WantedBy=multi-user.target

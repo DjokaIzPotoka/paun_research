@@ -1,0 +1,15 @@
+# Config for scripts/load_l1.py. Every key is required (P-15).
+
+# Local copy of the collector's file sink, pulled from the VM with rsync.
+input_root: "D:/zora-research-data/l1"
+
+clickhouse:
+  # zore-core's ClickHouse (discovery/docker-compose.yml). Its `default` user is
+  # restricted to localhost inside the container, so this project uses its own
+  # `optrv` user with rights on optrv.* and optrv_test.* only.
+  url: "http://127.0.0.1:8123"
+  database: "optrv"
+  user: "optrv"
+  # Kept outside the repo; never logged.
+  password_file: "D:/zora-research-data/secrets/clickhouse_optrv.password"
+  timeout_seconds: 300

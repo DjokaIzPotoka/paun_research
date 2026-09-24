@@ -4,8 +4,30 @@ import hashlib
 from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 import yaml
+
+
+class ConfigKeyError(ValueError):
+    """A required nested config parameter is absent. No default is substituted (P-15)."""
+
+    def __init__(self, dotted_key: str):
+        super().__init__(
+            f"config is missing required parameter {dotted_key!r}. "
+            "No default value will be substituted; add it explicitly to the config."
+        )
+        self.dotted_key = dotted_key
+
+
+def require(values: dict, *keys: str) -> Any:
+    """Walk `keys` into nested config, failing with the dotted path of the first gap."""
+    node: Any = values
+    for depth, key in enumerate(keys):
+        if not isinstance(node, dict) or key not in node:
+            raise ConfigKeyError(".".join(keys[: depth + 1]))
+        node = node[key]
+    return node
 
 
 class MissingConfigError(ValueError):

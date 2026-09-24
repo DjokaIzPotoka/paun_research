@@ -30,7 +30,7 @@ import pandas as pd
 import tardis_dev
 from tardis_dev import download_datasets
 
-from research.report.config import load_config
+from research.report.config import ConfigKeyError, load_config, require
 
 SCHEMA_VERSION = 1
 EXCHANGE = "deribit"
@@ -59,17 +59,6 @@ OPTIONS_COLUMNS = [
 BTC_DENOMINATED_PRICE_COLUMNS = ["bid_price", "ask_price", "mark_price"]
 
 REQUIRED_CONFIG_KEYS = ["months", "paths", "rate_limit", "normalize", "limits"]
-
-
-class ConfigKeyError(ValueError):
-    """A required config parameter is absent. No default is substituted (P-15)."""
-
-    def __init__(self, dotted_key: str):
-        super().__init__(
-            f"config is missing required parameter {dotted_key!r}. "
-            "No default value will be substituted; add it explicitly to the config."
-        )
-        self.dotted_key = dotted_key
 
 
 class SchemaMismatchError(RuntimeError):
@@ -116,15 +105,6 @@ def check_transfer_quota() -> None:
         except (ValueError, AttributeError):
             retry_after = 0
         raise TransferQuotaError(retry_after) from error
-
-
-def require(values: dict, *keys: str) -> Any:
-    node: Any = values
-    for depth, key in enumerate(keys):
-        if not isinstance(node, dict) or key not in node:
-            raise ConfigKeyError(".".join(keys[: depth + 1]))
-        node = node[key]
-    return node
 
 
 def surface_tardis_retries() -> None:

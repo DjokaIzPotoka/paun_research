@@ -45,6 +45,20 @@ make run         # load + hash runs/m0-smoke/config.yaml, write its report.md
 Every target here is invoked by CI (`.github/workflows/ci.yml`). A target is
 not added to this Makefile unless CI calls it.
 
+## Phase 0 data scripts
+
+Run as modules so `research` is importable, each with its own config:
+
+```bash
+uv run python -m scripts.tardis_download --config scripts/tardis_download.yaml
+uv run python -m scripts.deribit_l1_collector --config scripts/deribit_l1_collector.yaml
+uv run python -m scripts.load_l1 --config scripts/load_l1.yaml
+```
+
+The L1 collector runs on an AWS VM under systemd; setup, status checks and the
+rsync command for pulling its files are in [deploy/README.md](deploy/README.md).
+ClickHouse DDL lives in `scripts/migrations/optrv/` and is applied by `load_l1`.
+
 ## Import boundaries
 
 Enforced by `.importlinter` / `make boundaries`:

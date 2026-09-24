@@ -1,0 +1,238 @@
+{
+  "captured": "2026-09-24, Deribit mainnet public WebSocket and REST",
+  "instruments": [
+    {
+      "base_currency": "BTC",
+      "base_currency_uuid": "5b71fc48-3dd3-540c-809b-f8c94d0e68b5",
+      "block_trade_commission": 0.0003,
+      "block_trade_min_trade_amount": 25,
+      "block_trade_tick_size": 0.0001,
+      "contract_size": 1.0,
+      "counter_currency": "USD",
+      "creation_timestamp": 1765820589000,
+      "expiration_timestamp": 1790323200000,
+      "index_id": 1000033,
+      "instrument_id": 563858,
+      "instrument_name": "BTC-25SEP26-30000-C",
+      "instrument_type": "reversed",
+      "is_active": true,
+      "kind": "option",
+      "lot_size": 1,
+      "maker_commission": 0.0003,
+      "min_trade_amount": 0.1,
+      "option_type": "call",
+      "price_index": "btc_usd",
+      "product_group": "BTC",
+      "quote_currency": "BTC",
+      "quote_currency_uuid": "5b71fc48-3dd3-540c-809b-f8c94d0e68b5",
+      "settlement_currency": "BTC",
+      "settlement_period": "month",
+      "state": "open",
+      "strike": 30000.0,
+      "taker_commission": 0.0003,
+      "tick_size": 0.0001,
+      "tick_size_steps": [
+        {
+          "above_price": 0.005,
+          "tick_size": 0.0005
+        }
+      ],
+      "underlying_type": "crypto"
+    },
+    {
+      "base_currency": "BTC",
+      "base_currency_uuid": "5b71fc48-3dd3-540c-809b-f8c94d0e68b5",
+      "block_trade_commission": 0.00025,
+      "block_trade_min_trade_amount": 200000,
+      "block_trade_tick_size": 0.01,
+      "contract_size": 10.0,
+      "counter_currency": "USD",
+      "creation_timestamp": 1534242287000,
+      "expiration_timestamp": 32503708800000,
+      "future_type": "reversed",
+      "index_id": 1000033,
+      "instrument_id": 210838,
+      "instrument_name": "BTC-PERPETUAL",
+      "instrument_type": "reversed",
+      "is_active": true,
+      "kind": "future",
+      "lot_size": 1,
+      "maker_commission": 0.00015,
+      "max_leverage": 50,
+      "max_liquidation_commission": 0.01,
+      "max_non_default_leverage": 5.0,
+      "min_trade_amount": 10.0,
+      "price_index": "btc_usd",
+      "product_group": "BTC",
+      "quote_currency": "USD",
+      "quote_currency_uuid": "dc311642-e9fb-4ba9-a312-c75c1aef4ae1",
+      "settlement_currency": "BTC",
+      "settlement_period": "perpetual",
+      "state": "open",
+      "taker_commission": 0.00035,
+      "tick_size": 0.5,
+      "tick_size_steps": [],
+      "underlying_type": "crypto"
+    },
+    {
+      "base_currency": "BTC",
+      "base_currency_uuid": "5b71fc48-3dd3-540c-809b-f8c94d0e68b5",
+      "block_trade_commission": 0.00025,
+      "block_trade_min_trade_amount": 200000,
+      "block_trade_tick_size": 0.01,
+      "contract_size": 10.0,
+      "counter_currency": "USD",
+      "creation_timestamp": 1758873621000,
+      "expiration_timestamp": 1790323200000,
+      "future_type": "reversed",
+      "index_id": 1000033,
+      "instrument_id": 522657,
+      "instrument_name": "BTC-25SEP26",
+      "instrument_type": "reversed",
+      "is_active": true,
+      "kind": "future",
+      "lot_size": 1,
+      "maker_commission": 0.00015,
+      "max_leverage": 25,
+      "max_liquidation_commission": 0.01,
+      "max_non_default_leverage": 5.0,
+      "min_trade_amount": 10.0,
+      "price_index": "btc_usd",
+      "product_group": "BTC",
+      "quote_currency": "USD",
+      "quote_currency_uuid": "dc311642-e9fb-4ba9-a312-c75c1aef4ae1",
+      "settlement_currency": "BTC",
+      "settlement_period": "month",
+      "state": "open",
+      "taker_commission": 0.00035,
+      "tick_size": 2.5,
+      "tick_size_steps": [],
+      "underlying_type": "crypto"
+    }
+  ],
+  "ws_messages": {
+    "deribit_price_index.btc_usd": {
+      "jsonrpc": "2.0",
+      "method": "subscription",
+      "params": {
+        "channel": "deribit_price_index.btc_usd",
+        "data": {
+          "index_name": "btc_usd",
+          "price": 84380.82,
+          "timestamp": 1790265631445
+        }
+      }
+    },
+    "ticker.BTC-25SEP26-30000-C.100ms": {
+      "jsonrpc": "2.0",
+      "method": "subscription",
+      "params": {
+        "channel": "ticker.BTC-25SEP26-30000-C.100ms",
+        "data": {
+          "ask_iv": 999.0,
+          "best_ask_amount": 4.4,
+          "best_ask_price": 0.6455,
+          "best_bid_amount": 2.8,
+          "best_bid_price": 0.6445,
+          "bid_iv": 0.0,
+          "estimated_delivery_price": 84384.87,
+          "greeks": {
+            "delta": 1.0,
+            "gamma": 0.0,
+            "rho": 0.54795,
+            "theta": 0.0,
+            "vega": 0.0
+          },
+          "index_price": 84384.87,
+          "instrument_name": "BTC-25SEP26-30000-C",
+          "interest_rate": 0.0,
+          "last_price": 0.6435,
+          "mark_iv": 134.46,
+          "mark_price": 0.6447,
+          "max_price": 0.6595,
+          "min_price": 0.63,
+          "open_interest": 135.5,
+          "settlement_price": 0.64522774,
+          "state": "open",
+          "stats": {
+            "high": null,
+            "low": null,
+            "price_change": null,
+            "volume": 0.0,
+            "volume_usd": 0.0
+          },
+          "timestamp": 1790265629432,
+          "underlying_index": "BTC-25SEP26",
+          "underlying_price": 84435.16
+        }
+      }
+    },
+    "ticker.BTC-25SEP26.100ms": {
+      "jsonrpc": "2.0",
+      "method": "subscription",
+      "params": {
+        "channel": "ticker.BTC-25SEP26.100ms",
+        "data": {
+          "best_ask_amount": 100.0,
+          "best_ask_price": 84437.5,
+          "best_bid_amount": 22390.0,
+          "best_bid_price": 84425.0,
+          "estimated_delivery_price": 84384.87,
+          "index_price": 84384.87,
+          "instrument_name": "BTC-25SEP26",
+          "last_price": 84467.5,
+          "mark_price": 84435.16,
+          "max_price": 85702.5,
+          "min_price": 83167.5,
+          "open_interest": 784940040,
+          "settlement_price": 84559.92,
+          "state": "open",
+          "stats": {
+            "high": 84947.5,
+            "low": 82897.5,
+            "price_change": 0.5027,
+            "volume": 3339.27744144,
+            "volume_notional": 280699700.0,
+            "volume_usd": 280699700.0
+          },
+          "timestamp": 1790265629543
+        }
+      }
+    },
+    "ticker.BTC-PERPETUAL.100ms": {
+      "jsonrpc": "2.0",
+      "method": "subscription",
+      "params": {
+        "channel": "ticker.BTC-PERPETUAL.100ms",
+        "data": {
+          "best_ask_amount": 16880.0,
+          "best_ask_price": 84398.5,
+          "best_bid_amount": 67040.0,
+          "best_bid_price": 84398.0,
+          "current_funding": 0.0,
+          "estimated_delivery_price": 84384.87,
+          "funding_8h": 5.012e-05,
+          "index_price": 84384.87,
+          "instrument_name": "BTC-PERPETUAL",
+          "interest_value": 0.017087127970698238,
+          "last_price": 84401.5,
+          "mark_price": 84403.01,
+          "max_price": 85669.5,
+          "min_price": 83136.5,
+          "open_interest": 866603520,
+          "settlement_price": 84531.6,
+          "state": "open",
+          "stats": {
+            "high": 84950.5,
+            "low": 82800.0,
+            "price_change": 0.4804,
+            "volume": 20011.91604014,
+            "volume_notional": 1681891080.0,
+            "volume_usd": 1681891080.0
+          },
+          "timestamp": 1790265629847
+        }
+      }
+    }
+  }
+}
