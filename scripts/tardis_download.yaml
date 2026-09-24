@@ -1,0 +1,32 @@
+# Config for scripts/tardis_download.py. Every key below is required:
+# the script refuses to start if one is missing (P-15).
+#
+# paths point at D: because C: has under 4 GB free and the free-tier
+# options_chain days run to hundreds of MB each.
+
+months:
+  start: "2024-10"
+  end: "current"
+
+paths:
+  raw_root: "D:/zora-research-data/raw/tardis"
+  normalized_root: "D:/zora-research-data/normalized"
+  manifest: "D:/zora-research-data/manifest.json"
+
+rate_limit:
+  sleep_seconds_between_days: 60
+  max_attempts: 3
+  # Tardis answers 429 when throttled; 5 s was far too short to outlast one.
+  backoff_seconds: 60
+  # aiohttp total timeout, so it must cover the whole body: the largest
+  # measured day is 9.7 GiB. tardis-dev's own 1800 s default is what let a
+  # stalled connection hang for half an hour instead of failing.
+  download_timeout_seconds: 1200
+
+normalize:
+  chunk_rows: 500000
+
+limits:
+  # One options_chain day measured at 4.3 GB gz, so the pass stops cleanly
+  # rather than filling the volume when the margin gets this thin.
+  min_free_gb: 10
