@@ -1,0 +1,330 @@
+# research/hypothesis/options_rv/prereg.yaml
+#
+# Pre-registracija faze 0 (edge spike), verzija 2.
+# Izvor: Notion OPT_ARB_PHASE_0 v0.5; odluke D-49, D-50, D-51, D-52, D-57,
+# D-58 (lock A/B), D-59 (primarni endpoint), D-60 (H-A1a/b/c).
+#
+# Pravila:
+# - Kod analize čita SVE pragove i definicije iz ovog fajla. Nijedna vrednost
+#   iz ovog fajla ne sme postojati kao konstanta u kodu.
+# - Ovaj fajl je Lock A (procedura). Posle taga prereg/phase-0 ne menja se.
+#   Izmena = nova hypothesis_version i nov tag; stari run ostaje zapisan.
+# - Fitovani parametri (SVI, spread model) i sadržaj podataka NISU deo ovog
+#   fajla; podaci se zaključavaju u Lock B (data/phase-0).
+#
+# Sve vrednosti su potvrđene 2026-09-24. Vrednosti označene kao "policy" su
+# izbori, ne činjenice o tržištu; menjaju se samo novom verzijom hipoteze.
+
+meta:
+  hypotheses: ["H-A1a", "H-A1c"]        # D-60; H-A1b nije u fazi 0
+  hypothesis_version: "2"
+  prereg_revision: "2.1"               # potvrđeni policy izbori, centralno pravilo izlaza
+  phase: "0"
+  source_doc: "OPT_ARB_PHASE_0 v0.5"
+  status: "draft"                        # posle Lock A: "locked"
+  environment:
+    python_lock_hash: null               # sha256(uv.lock), popunjava se pri Lock A
+    git_commit: null                     # popunjava se pri Lock A
+
+# ───────────────────────────────────────────────────────────── LOCKOVI ──
+locks:                                   # D-58
+  A_procedure:
+    tag: "prereg/phase-0"
+    contains: ["prereg.yaml", "sha256(prereg.yaml)", "git_commit", "python_lock_hash", "cutoff_date"]
+  B_data:
+    tag: "data/phase-0"
+    when: "na cutoff_date, pre bilo kakvog outcome koraka"
+    contains:
+      - "manifest svih ulaznih fajlova sa sha256"
+      - "collector manifest i collector_gaps"
+      - "Tardis manifest"
+      - "account_fee_schedule (izvor: Deribit account settings, captured_at_utc, sha256)"
+      - "margin_formula_snapshot (izvor: Deribit dokumentacija, captured_at_utc, sha256)"
+    allowed_before_lock_B: ["checksum", "brojanje redova", "pokrivenost po danu", "provera nedostajućih podataka", "provera pravila minuta", "quote_validity statistika"]
+    forbidden_before_lock_B: ["residual", "epizode", "markout", "PnL", "bilo koja kolona izvedena iz ishoda"]
+  outcome_run:
+    requires: ["A_procedure", "B_data"]
+
+# ─────────────────────────────────────────────────────────────── PODACI ──
+data:
+  venue: "deribit"
+  underlying: "BTC"
+  payoff: "inverse"                     # D-51
+  sources:
+    tardis_free_days:
+      datasets: ["options_chain/OPTIONS", "derivative_ticker/BTC-PERPETUAL", "trades/BTC-PERPETUAL"]
+      date_range: ["2024-10-01", "2026-09-01"]
+      structure: "izolovani dani"
+    own_collector:
+      start_date: "2026-09-24"
+      cutoff_date: "2026-10-22"          # poslednji uključen UTC dan
+      exclude_day_if_gap_minutes_over: 60  # policy
+      excluded_days_report: ["count", "list_of_dates", "reason_per_day", "total_gap_minutes_per_day"]
+      # gapovi mogu biti povezani sa volatilnim periodima; isključeni dani se
+      # uvek prijavljuju pojedinačno, ne samo kao zbir
+    deribit_trade_history:
+      window_months: 12
+      role: "sekundarno; modelovani residual (proxy)"
+      known_bias: "kvota postoji samo kada je neko prešao spread"
+
+  spread_model_split:                   # samo za modelovani put (trade istorija)
+    rule: "chronological"
+    calibration_fraction: 0.6667
+    validation_fraction: 0.3333
+
+  valid_day:
+    tardis: "dan u Tardis manifestu sa status ok"
+    collector: "UTC dan izmedju start_date i cutoff_date, nije iskljucen po gap pravilu"
+
+  reporting_split: ["tardis_days", "own_collector_days", "combined_true_quotes", "modeled_trade_history"]
+
+# ─────────────────────────────────────────────────────── KVALITET KVOTE ──
+quote_validity:
+  require_bid_gt_0: true
+  require_ask_gt_bid: true              # crossed ili locked knjiga je nevalidna
+  require_sizes_gt_0: true
+  max_quote_age_seconds: 10             # policy
+  age_definition: "target_time - venue_ts; nikad vreme prijema"
+  applies_everywhere: "isti prag svuda gde se kvota koristi kao izvršivo stanje (ulaz, izlaz, hedž, fit, forward)"
+  invalid_quote: "tretira se kao da kvote nema"
+
+minute_rule:
+  label: "start"                        # minut [t, t+1min) označen sa t
+  pick: "last_valid_quote_strictly_before_end"
+  time_field: "venue_ts"
+  empty_minute: "leave_empty"
+
+# ──────────────────────────────────────────────────────────── KAUZALNOST ──
+causality:
+  rule: "svaki izračun u trenutku t koristi samo kvote sa venue_ts <= t"
+  applies_to: ["forward", "svi_fit", "sigma_model", "candidate_selection", "episode_detection", "hedge_ratio"]
+  spread_model: "fit samo na kalibracionim danima; koristi se samo za modelovani put; prijavljuje se da kalibracioni dani mogu biti posle dana primene"
+
+forward:                                # D-57
+  primary: "synthetic_parity"
+  point: "midpoint_of_interval"
+  strikes: "liquid_core"
+  diagnostic: "futures_mark"            # samo collector dani, samo prijava razlike
+
+liquid_core:
+  max_spread_vol_points: 2.0
+  min_size_btc: 1.0
+  abs_delta_range: [0.10, 0.90]
+
+candidates:
+  max_spread_vol_points: 6.0
+  abs_delta_range: [0.03, 0.97]
+
+fit:
+  model: "SVI_raw"
+  per: "expiry"
+  candidate_excluded: true              # P-05
+  refit_every_minutes: 5
+  between_refits: "carry_last_fitted_surface"
+  calendar_arbitrage_check: true
+  on_fit_failure: "nema povrsine za tu expiraciju u tom intervalu; nema signala"
+
+residual:                               # D-50
+  buy:  "fair - ask"
+  sell: "bid - fair"
+  mid_residual: "diagnostic_only"
+  units: "USD_per_contract"             # 1 ugovor = 1 BTC
+  sigma_model: "leave_strike_out"
+  sigma_model_to_usd: "vega"
+
+# ─────────────────────────────────────────────────────────────── TROŠKOVI ──
+costs:
+  option_trade_fee:
+    rate_of_underlying: 0.0003          # 3 bps
+    cap_fraction_of_premium: 0.125
+  option_delivery_fee:
+    rate_of_underlying: 0.00015         # 0.015%
+    cap_fraction_of_option_value: 0.125
+  perp_fee:
+    stress_taker: 0.0005                # stres pretpostavka
+    baseline: "account_fee_schedule iz Lock B"
+  funding: "funding_8h / derivative_ticker, putanja po minutu"
+  models_reported: ["baseline", "stress"]
+  primary_test_uses: "stress"           # policy: G-0 gate na stres modelu
+  diagnostic_uses: "baseline"
+  stress_model:
+    version: "stress-v1"
+    option_trade_fee: "rate_of_underlying 0.0003 sa capom 0.125 premije"
+    option_delivery_fee: "rate_of_underlying 0.00015 sa capom 0.125 vrednosti opcije"
+    perp_fee: 0.0005                    # taker na svaku hedž transakciju
+    execution: "izvršiva strana (ask za kupovinu, bid za prodaju), bez dodatnog slippage-a"
+    funding: "stvarna funding putanja"
+  baseline_model:
+    version: "baseline-v1"
+    fees: "account_fee_schedule iz Lock B"
+    execution: "izvršiva strana, bez dodatnog slippage-a"
+    funding: "stvarna funding putanja"
+
+# ──────────────────────────────────────────────────────────────── EPIZODA ──
+episode:
+  condition: "residual_exec_usd > entry_threshold_cost_usd + k_sigma * sigma_model_usd"
+  k_sigma: 1.0
+  entry_threshold_cost:                 # ex-ante gornja granica punog kruga
+    type: "ex_ante_round_trip_upper_bound"
+    option_legs: "2 * rate_of_underlying * underlying_price po nozi"   # cap samo smanjuje fee
+    hedge: "2 * perp_fee.stress_taker * |delta| * underlying_price"
+    funding: "ne ulazi u prag"
+  min_duration_minutes: 15
+  continuity: "uzastopni minuti; prazan ili nevalidan minut prekida epizodu"
+  entry_time: "kraj 15. minuta"
+  entry_price: "izvršiva strana u trenutku ulaza"
+  one_position_per_instrument: true     # nema novog ulaza dok je pozicija otvorena
+  size:                                 # policy
+    rule: "min(izvršiva L1 veličina po svim nogama), zaokruženo nadole na min_trade_amount"
+    measured_at: "entry_time"
+    no_later_depth: true                # kasnija dubina se ne sme koristiti za početnu veličinu
+    if_below_minimum: "epizoda se beleži, ali bez pozicije; prijavljuje se broj takvih"
+
+# ─────────────────────────────────────────────────────────────── MARKOUT ──
+markout:
+  central_rule:                         # jedno pravilo za sve module
+    target_time: "entry_time + horizon"
+    exit_observation: "deterministička funkcija kvota oko target_time (exit_quote)"
+    hedge_decisions: "kauzalne: samo kvote sa venue_ts <= vreme odluke"
+  exit_quote:
+    max_offset_minutes: 5
+    selection: "nearest"
+    tie_break: "before"
+    must_satisfy: "quote_validity (starost u odnosu na trenutak izabrane kvote)"
+    report_actual_elapsed_minutes: true
+    if_none_valid: "epizoda nevalidna za taj horizont"
+  primary_horizon: "4h"
+  secondary_horizons: ["1h", "1d", "expiry"]
+  secondary_source: "1d i expiry samo na collector danima"
+  exit_price: "izvršiva strana u trenutku izlaza (bid za long, ask za short)"
+  hedge:
+    instrument: "BTC-PERPETUAL"
+    at_entry: true
+    rebalance:                          # policy
+      type: "fixed_time"
+      interval_minutes: 60
+      schedule: "entry_time + 60m, + 120m, ... strogo pre target_time; poslednje zatvaranje u exit tački"
+      quote: "poslednja validna perp kvota sa venue_ts <= vreme rebalansa (kauzalno)"
+    price: "perp mid +/- fee"
+  expiry_path:
+    use_delivery_price: true            # TWAP 07:30-08:00 UTC
+    include_delivery_fee: true
+    stop_hedging_at: "expiry"
+  costs: "realized_round_trip"
+  validity_for_horizon:
+    rule: "epizoda je validna za horizont samo ako je kompletna ulazna putanja dostupna iz zakljucanog izvora"
+    required_inputs:
+      - "validna izlazna kvota opcije po exit_quote pravilu"
+      - "validna perp kvota u svakoj tacki rebalansa i izlaza"
+      - "funding stopa za ceo interval"
+      - "delivery price, ako horizont ukljucuje istek"
+    invalid: "epizoda se iskljucuje iz tog horizonta i broji u izvestaju"
+
+# ──────────────────────────────────────────────────────────────── BUCKETI ──
+primary_buckets:                        # jedna familija za Holm
+  B1:
+    hypothesis: "H-A1a"
+    name: "put_surface_residual"
+    option_type: "put"
+    tenor_days: [7, 30]
+    abs_delta: [0.10, 0.25]
+    directions: ["buy", "sell"]
+  B2:
+    hypothesis: "H-A1a"
+    name: "call_surface_residual"
+    option_type: "call"
+    tenor_days: [7, 30]
+    abs_delta: [0.10, 0.25]
+    directions: ["buy", "sell"]
+  B3:
+    hypothesis: "H-A1c"
+    name: "calendar_7d_30d"
+    short_leg_tenor_days: [5, 10]
+    long_leg_tenor_days: [25, 35]
+    abs_delta: [0.40, 0.60]
+    same_strike: true
+    construction: "1:1_contracts"       # policy
+    weighting: "none"                   # vega-ponderisan calendar bi bio druga hipoteza
+    direction_A: "(fair_short - ask_short) + (bid_long - fair_long)"   # long kratka, short duga
+    direction_B: "(bid_short - fair_short) + (fair_long - ask_long)"   # short kratka, long duga
+    residual: "max(direction_A, direction_B); smer se bira u trenutku ulaza"
+    fees: "obe noge"
+    size: "min(izvrsiva velicina kratke, izvrsiva velicina duge)"
+
+exploratory:
+  description: "drugi tenori, delte, wingovi, sekundarni horizonti"
+  multiple_testing: "BH_FDR"
+  fdr_q: 0.10                           # policy
+  can_decide_gate: false
+  rule: "eksplorativni nalazi mogu generisati nove hipoteze, ali ne mogu retroaktivno proširiti G-0 za H-A1a ili H-A1c"
+
+# ─────────────────────────────────────────────────── KAPITAL I PRINOS ──
+capital:                                # D-59
+  per_bucket_strategy: true             # svaki bucket je zasebna strategija
+  required_margin_i: "margina opcione pozicije + inicijalna margina perp hedža, po margin_formula_snapshot iz Lock B"
+  long_option_margin: "placena premija"
+  C0: "max po minutima uzorka od sume required_margin aktivnih pozicija, u USD"
+  C0_sensitivity: "prijaviti C0 i rezultat kada se izbaci dan sa najvecim istovremenim marginom"
+  hurdle_annual: 0.25                   # POLICY (D-53 vrednost)
+  daily_hurdle: "hurdle_annual / 365 * C0"
+  primary_return: "sum(net_pnl) / C0 * 365 / broj_validnih_dana"
+  diagnostics: ["capital_time_return_density", "broj dana sa epizodom", "L1 kapacitet"]
+  capacity_label: "annual_return_lower_bound_L1"
+
+# ─────────────────────────────────────────────────────────── STATISTIKA ──
+statistics:                             # D-59
+  unit: "validan UTC dan"
+  daily_value: "X_d = net_pnl_d - daily_hurdle"
+  net_pnl_attribution: "neto PnL epizode pripisuje se danu ulaza (za 4h ulaz i izlaz su istog dana po pravilu validnosti)"
+  include_days_without_episodes: true   # X_d = -daily_hurdle
+  hypothesis: "H0: E[X_d] <= 0 ; H1: E[X_d] > 0"
+  statistic: "mean(X_d)"
+  p_value:
+    method: "bootstrap_po_danima_sa_nametnutom_nultom"   # X_d - mean(X_d), resampling dana
+    formula: "(1 + #{T* >= T_obs}) / (B + 1)"
+    resamples: 10000
+  ci:
+    method: "bootstrap_percentile_po_danima"
+    level: 0.95
+    resamples: 10000
+  multiple_testing_primary:
+    method: "Holm"
+    family: ["B1", "B2", "B3"]
+    family_alpha: 0.05
+  random_seed: 184729
+  n_valid_days_min: 30
+
+mde:
+  role: "stavka izvestaja; nije poluga odluke"
+  definition: "2.49 * bootstrap SE od mean(X_d), izrazeno kao godisnji visak prinosa iznad 25%"
+  computed_in: "outcome_run"
+
+# ───────────────────────────────────────────────────────────────── G-0 ──
+g0:
+  pass: "n_valid_days >= 30 AND Holm-p < 0.05 u bar jednom primarnom bucketu"
+  fail: "n_valid_days >= 30 AND gornja granica 95% CI za mean(X_d) < 0 u svim primarnim bucketima"
+  inconclusive: "sve ostalo (n_valid_days < 30, ili CI sadrzi 0 bez znacajnosti)"
+  on_pass: "kupiti 12 meseci pune Tardis knjige i potvrditi pre 1A'"
+  on_inconclusive:
+    action: "jednokratna kupovina 6 meseci kontinuirane Tardis knjige"
+    second_pass: "isti prereg.yaml; nov Lock B (data/phase-0-pass2)"
+    max_passes: 2
+  on_fail: "prereg status: rejected, link na run"
+
+# ────────────────────────────────────────────────────────────── IZVEŠTAJ ──
+report_required:
+  - "hypothesis_version, config sha256, git tagovi Lock A i Lock B, data manifest hash"
+  - "broj validnih dana, broj dana sa epizodom, broj epizoda po bucketu"
+  - "mean(X_d), 95% CI, sirovi i Holm p, po bucketu"
+  - "primarni godisnji prinos na C0, C0 i C0 osetljivost"
+  - "MDE kao godisnji visak prinosa"
+  - "medijan i srednja vrednost neto markouta po horizontu (dijagnostika)"
+  - "capital-time gustina prinosa (dijagnostika)"
+  - "baseline i stress model troskova"
+  - "epizode iskljucene po validnosti horizonta, po razlogu"
+  - "rezultati po reporting_split"
+  - "eksplorativni rezultati sa BH-FDR, odvojeno"
+  - "RMSE spread modela (modelovani put)"
+  - "iskljuceni collector dani: broj, datumi, razlog i ukupno minuta rupe po danu"
+  - "stvarno trajanje markouta (raspodela) po horizontu"
+  - "broj epizoda bez pozicije jer je L1 velicina ispod minimuma"
