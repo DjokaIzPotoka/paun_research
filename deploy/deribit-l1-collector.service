@@ -10,7 +10,9 @@ Type=simple
 User=zora
 Group=zora
 WorkingDirectory=/opt/zora-research
-ExecStart=/opt/zora-research/.venv/bin/python -m scripts.deribit_l1_collector --config /opt/zora-research/scripts/deribit_l1_collector.yaml
+# Same invocation as CI's "scripts smoke" step: by path, relying on `uv sync`
+# having installed research/scripts into the venv (no PYTHONPATH, no -m).
+ExecStart=/opt/zora-research/.venv/bin/python /opt/zora-research/scripts/deribit_l1_collector.py --config /opt/zora-research/scripts/deribit_l1_collector.yaml
 Restart=always
 RestartSec=5
 KillSignal=SIGTERM

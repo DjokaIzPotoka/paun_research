@@ -16,8 +16,7 @@ symbol missing from the metadata cache triggers a refresh; its row is held one
 minute, and if metadata is still missing then, the lost minutes are recorded
 in collector_gaps as missing_metadata instead of being written with guesses.
 
-Run as a module so `research` is importable:
-    python -m scripts.deribit_l1_collector --config scripts/deribit_l1_collector.yaml
+    uv run python scripts/deribit_l1_collector.py --config scripts/deribit_l1_collector.yaml
 """
 
 from __future__ import annotations

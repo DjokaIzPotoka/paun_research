@@ -1,7 +1,7 @@
 .PHONY: setup test lint boundaries run
 
 setup:
-	uv sync --all-groups
+	uv sync --all-groups --locked
 
 test:
 	uv run pytest

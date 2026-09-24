@@ -18,8 +18,16 @@ dev = [
     "import-linter>=2.1",
 ]
 
-[tool.uv]
-package = false
+[build-system]
+requires = ["uv_build>=0.12.17,<0.13"]
+build-backend = "uv_build"
+
+# Flat layout: both packages live at the repo root. `scripts` is packaged too,
+# because the collector's ClickHouse sink imports scripts.load_l1, and a script
+# run by path (`python scripts/x.py`) only has scripts/ itself on sys.path.
+[tool.uv.build-backend]
+module-root = ""
+module-name = ["research", "scripts"]
 
 [tool.ruff]
 line-length = 100
@@ -30,4 +38,3 @@ select = ["E", "F", "I", "UP", "B"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["."]

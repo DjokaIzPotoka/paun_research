@@ -98,7 +98,7 @@ rsync -av --prune-empty-dirs \
 Then, locally (ClickHouse from `zore-core/discovery/docker-compose.yml` must be up):
 
 ```bash
-uv run python -m scripts.load_l1 --config scripts/load_l1.yaml
+uv run python scripts/load_l1.py --config scripts/load_l1.yaml
 ```
 
 Re-running is safe: files already in `load_manifest` are skipped by sha256, and the
@@ -111,7 +111,7 @@ The current hour lives in `.staging/` until it is over. When the collection ends
 
 ```bash
 sudo systemctl disable --now deribit-l1-collector
-sudo -u zora /opt/zora-research/.venv/bin/python -m scripts.deribit_l1_collector \
+sudo -u zora /opt/zora-research/.venv/bin/python /opt/zora-research/scripts/deribit_l1_collector.py \
   --config /opt/zora-research/scripts/deribit_l1_collector.yaml --seal-and-exit
 ```
 

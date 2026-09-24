@@ -31,3 +31,13 @@ jobs:
 
       - name: run (config check)
         run: make run
+
+      # Run scripts by path, exactly as on the VM. That puts only scripts/ on
+      # sys.path, so this fails unless `research` is installed as a package.
+      # The collector gets the real VM config: --seal-and-exit validates every
+      # config key (P-15) and exits without touching the network.
+      - name: scripts smoke
+        run: |
+          uv run --frozen python scripts/deribit_l1_collector.py --config scripts/deribit_l1_collector.yaml --seal-and-exit
+          uv run --frozen python scripts/load_l1.py --help
+          uv run --frozen python scripts/tardis_download.py --help

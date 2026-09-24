@@ -47,12 +47,14 @@ not added to this Makefile unless CI calls it.
 
 ## Phase 0 data scripts
 
-Run as modules so `research` is importable, each with its own config:
+The project is an installable package: `uv sync` installs `research` and `scripts`
+in editable mode, so scripts run by path with no PYTHONPATH (CI's `scripts smoke`
+step checks exactly this). Each takes its own config:
 
 ```bash
-uv run python -m scripts.tardis_download --config scripts/tardis_download.yaml
-uv run python -m scripts.deribit_l1_collector --config scripts/deribit_l1_collector.yaml
-uv run python -m scripts.load_l1 --config scripts/load_l1.yaml
+uv run python scripts/tardis_download.py --config scripts/tardis_download.yaml
+uv run python scripts/deribit_l1_collector.py --config scripts/deribit_l1_collector.yaml
+uv run python scripts/load_l1.py --config scripts/load_l1.yaml
 ```
 
 The L1 collector runs on an AWS VM under systemd; setup, status checks and the
